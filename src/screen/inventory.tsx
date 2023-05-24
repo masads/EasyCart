@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {View, StyleSheet, FlatList, Image, Pressable} from 'react-native';
 import {Layout, Text, Card, Button, Icon} from '@ui-kitten/components';
 import {normalize} from '../styles/Style';
@@ -8,77 +8,65 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {StackParamList} from '../navigation/Admin';
 import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
 import {RootState} from '../store/Store';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {userSlice} from '../store/slices/userSlice';
+import {deleteProduct, getProducts} from '../store/actions/AdminActions';
+import {RefreshControl} from 'react-native-gesture-handler';
+import Theme from '../styles/Theme';
+import Loader from '../components/Loader';
 
 type Props = NativeStackScreenProps<StackParamList, 'Inventory'>;
 
-const data = [
-  {
-    id: 1,
-    title: 'Samsung 55-inch Smart 4K UHD TV',
-    description:
-      "Experience breathtaking visuals with this Samsung 55-inch Smart 4K UHD TV. Featuring a crystal-clear display, powerful speakers, and smart features like voice control and screen mirroring, it's the perfect choice for your home entertainment needs.",
-    price: 139,
-    picture:
-      'https://images.unsplash.com/photo-1574597146034-2f166efd78a2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80',
-  },
-  {
-    id: 2,
-    title: 'Apple iPhone 13 Pro Max',
-    description:
-      "The Apple iPhone 13 Pro Max is the latest and greatest smartphone from Apple, featuring a stunning 6.7-inch Super Retina XDR display, A15 Bionic chip, and 5G connectivity. With its advanced camera system, long-lasting battery, and sleek design, it's the ultimate choice for the tech-savvy user.",
-    price: 284,
-    picture:
-      'https://images.unsplash.com/photo-1512054502232-10a0a035d672?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=880&q=80',
-  },
-  {
-    id: 3,
-    title: 'Dell Inspiron 15 3000 Laptop',
-    description:
-      "The Dell Inspiron 15 3000 is a versatile and affordable laptop that's perfect for work and play. Featuring a 10th Gen Intel Core processor, 8GB RAM, and a 512GB SSD, it delivers fast and responsive performance for all your computing needs.",
-    price: 899,
-    picture:
-      'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1332&q=80',
-  },
-  {
-    id: 4,
-    title: 'Sony WH-1000XM4 Wireless Headphones',
-    description:
-      'The Sony WH-1000XM4 Wireless Headphones are the ultimate choice for audiophiles and music lovers. Featuring advanced noise-cancellation technology, Hi-Res audio, and up to 30 hours of battery life, they offer an immersive and high-quality listening experience.',
-    price: 524,
-    picture:
-      'https://images.unsplash.com/photo-1520005258079-0b2cfc298a22?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80',
-  },
-];
-
-const ItemCard = ({item}: any) => (
-  <Card style={styles.card}>
-    <Image source={{uri: item.picture}} style={styles.image} />
-    <Text style={styles.title} category="h6">
-      {item.title}
-    </Text>
-    <Text style={styles.description}>
-      {item.description.substring(0, 100)}...
-    </Text>
-    <View style={styles.bottomRow}>
-      <Text status="primary" style={styles.price}>
-        {item.price.toFixed(2)} PKR
+const ItemCard = ({item}: any) => {
+  const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
+  return (
+    <Card style={styles.card}>
+      <Image source={{uri: item.image}} style={styles.image} />
+      <Text style={styles.title} category="h6">
+        {item.title}
       </Text>
-      <Button
-        style={styles.button}
-        status="danger"
-        size="small"
-        accessoryRight={() => (
-          <Icon fill="#ffff" style={styles.icon} name="trash-2" />
-        )}
-      />
-    </View>
-  </Card>
-);
+      <Text style={styles.description}>
+        {item.description.substring(0, 100)}...
+      </Text>
+      <View style={styles.bottomRow}>
+        <Text status="primary" style={styles.price}>
+          {Number(item.price).toFixed(2)} PKR
+        </Text>
+        <Button
+          onPress={() => {
+            dispatch(deleteProduct({productId: item.id}));
+          }}
+          style={styles.button}
+          status="danger"
+          size="small"
+          accessoryRight={() => (
+            <Icon fill="#ffff" style={styles.icon} name="trash-2" />
+          )}
+        />
+      </View>
+    </Card>
+  );
+};
 
 export default function Inventory({navigation}: Props) {
   const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
+  const {loading, products} = useSelector(
+    (state: RootState) => state.adminSlice,
+  );
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  useEffect(() => {
+    dispatch(getProducts());
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      dispatch(getProducts());
+      setRefreshing(false);
+    }, 2000);
+  }, []);
+
+  console.log(products);
   return (
     <>
       <Layout style={styles.container} level="1">
@@ -98,13 +86,24 @@ export default function Inventory({navigation}: Props) {
             Inventory
           </Text>
         </Layout>
-        <FlatList
-          data={data}
-          renderItem={(prop: any) => (
-            <ItemCard {...prop} navigation={navigation} />
-          )}
-          keyExtractor={item => item.id.toString()}
-        />
+        {loading ? (
+          <Loader />
+        ) : (
+          <FlatList
+            data={products}
+            refreshControl={
+              <RefreshControl
+                colors={['#3366FF']}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
+            renderItem={(prop: any) => (
+              <ItemCard {...prop} navigation={navigation} />
+            )}
+            keyExtractor={item => item.id.toString()}
+          />
+        )}
       </Layout>
       <Pressable
         style={{

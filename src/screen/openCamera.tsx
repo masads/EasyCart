@@ -24,7 +24,7 @@ const OpenCamera: React.FC<Props> = ({navigation}) => {
         setState({...state, photo: data});
         navigation.navigate({
           name: 'AddProduct',
-          params: {image: data.uri},
+          params: {image: data},
           merge: true,
         });
       } catch (error) {

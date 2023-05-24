@@ -3,10 +3,14 @@ import {View, StyleSheet, Image, ScrollView} from 'react-native';
 import {Layout, Text as EvaText, Divider, Button} from '@ui-kitten/components';
 import {normalize} from '../styles/Style';
 import CustomHeader from '../components/Header';
+import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
+import {RootState} from '../store/Store';
+import {useDispatch} from 'react-redux';
+import {userSlice} from '../store/slices/userSlice';
 
 export default function ProductDetail({route}: any) {
-  const {name, description, price, image} = route.params;
-
+  const {id, name, description, price, image} = route.params;
+  const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
   return (
     <Layout style={styles.container}>
       <CustomHeader title="Product Detail" />
@@ -27,9 +31,15 @@ export default function ProductDetail({route}: any) {
             <Divider style={styles.divider} />
             <View style={styles.priceRow}>
               <EvaText style={styles.price} category="p1">
-                {price.toFixed(2)} PKR
+                {Number(price).toFixed(2)} PKR
               </EvaText>
-              <Button style={styles.addToCartButton}>Add to Cart</Button>
+              <Button
+                onPress={() => {
+                  dispatch(userSlice.actions.AddToCart(id));
+                }}
+                style={styles.addToCartButton}>
+                Add to Cart
+              </Button>
             </View>
           </View>
         </View>

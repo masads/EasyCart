@@ -1,5 +1,7 @@
-import {createSlice} from '@reduxjs/toolkit';
+import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import userActions, {
+  Product,
+  getProducts,
   getToken,
   login,
   logout,
@@ -14,6 +16,8 @@ export interface UserState {
   loading: boolean;
   isAuthenticated: boolean;
   admin: boolean;
+  products: Product[];
+  cart: Product[];
 }
 
 const initialState: UserState = {
@@ -24,6 +28,8 @@ const initialState: UserState = {
   loading: false,
   isAuthenticated: false,
   admin: false,
+  products: [],
+  cart: [],
 };
 
 export const userSlice = createSlice({
@@ -87,9 +93,22 @@ export const userSlice = createSlice({
       state.loading = false;
       state.isAuthenticated = false;
     });
+    builder.addCase(getProducts.pending, (state: UserState) => {
+      state.loading = true;
+    });
+    builder.addCase(
+      getProducts.fulfilled,
+      (state: UserState, action: PayloadAction<Product[]>) => {
+        state.loading = false;
+        state.products = action.payload;
+      },
+    );
+    builder.addCase(getProducts.rejected, (state: UserState) => {
+      state.loading = false;
+    });
   },
 });
 
-export const {AdminOff, AdminOn} = userSlice.actions;
+export const {AdminOff, AdminOn, AddToCart} = userSlice.actions;
 
 export default userSlice.reducer;

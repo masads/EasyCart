@@ -2,11 +2,22 @@ import {createAsyncThunk} from '@reduxjs/toolkit';
 import {RootState} from '../Store';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 import {setAlert} from '../slices/AppSlice';
+import firestore from '@react-native-firebase/firestore';
+import {UserState} from '../slices/userSlice';
+
 export interface UserActions {
   isAuthenticated: boolean;
   email: string;
   userId: string;
   name: string;
+}
+
+export interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  image: string;
 }
 
 export const getToken = createAsyncThunk<
@@ -137,13 +148,58 @@ export const logout = createAsyncThunk<UserActions, void, {state: RootState}>(
     }
   },
 );
-function AdminOn(state: any) {
+
+export const getProducts = createAsyncThunk<
+  Product[],
+  void,
+  {state: RootState; rejectValue: any}
+>('userSlice/getProducts', async function (_, {rejectWithValue, dispatch}) {
+  try {
+    // Retrieve products from Firebase Firestore
+    const querySnapshot = await firestore().collection('products').get();
+    const products: Product[] = [];
+    querySnapshot.forEach(doc => {
+      const product = {
+        id: doc.id,
+        ...doc.data(),
+      } as Product;
+      products.push(product);
+    });
+    return products;
+  } catch (error: any) {
+    console.log(error);
+    let message = 'Something went wrong!';
+    dispatch(setAlert({message}));
+    return rejectWithValue('Something went wrong');
+  }
+});
+
+function AdminOn(state: UserState) {
   state.admin = true;
 }
-function AdminOff(state: any) {
+function AdminOff(state: UserState) {
   state.admin = false;
 }
-
-const userActions = {AdminOff, AdminOn};
+function AddToCart(state: UserState, action: any) {
+  const product: Product | undefined = state.products.find(
+    item => item.id === action.payload,
+  );
+  console.log(product);
+  if (product) {
+    state.cart.push(product);
+    state.products = state.products.filter(item => item.id !== action.payload);
+  }
+}
+function DeleteFromCart(state: UserState, action: any) {
+  const product: Product | undefined = state.cart.find(
+    item => item.id === action.payload,
+  );
+  console.log(product);
+  if (product) {
+    state.products.push(product);
+    state.cart = state.cart.filter(item => item.id !== action.payload);
+  }
+}
+const userActions = {AdminOff, AdminOn, AddToCart, DeleteFromCart};
 
 export default userActions;
