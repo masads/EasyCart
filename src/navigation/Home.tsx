@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React from 'react';
+import React, {useEffect} from 'react';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import {
   Drawer,
@@ -14,8 +14,10 @@ import CartScreen from '../screen/cart';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../store/Store';
 import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
-import {logout} from '../store/actions/UserActions';
-
+import {getProducts, logout} from '../store/actions/UserActions';
+import messaging from '@react-native-firebase/messaging';
+import {requestUserPermission} from '../../App';
+import { useNavigation } from '@react-navigation/native';
 export type RootDrawerParamList = {
   Home: undefined;
   Cart: undefined;
@@ -87,6 +89,44 @@ const DrawerContent = ({navigation, state}: any) => {
 };
 
 export default function Home() {
+  const navigation = useNavigation();
+  const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
+  useEffect(() => {
+    (async () => {
+      if (await requestUserPermission()) {
+        if (await requestUserPermission()) {
+          messaging()
+            .getToken()
+            .then(token => {
+              console.log('token', token);
+            });
+        } else {
+          console.log('Failed Token Status');
+          return;
+        }
+
+        messaging().onNotificationOpenedApp(handleNotification);
+
+        messaging().getInitialNotification().then(handleNotification);
+
+        messaging().setBackgroundMessageHandler(handleNotification);
+        const unsubscribe = messaging().onMessage(handleNotification);
+
+        messaging()
+          .subscribeToTopic('newProduct')
+          .then(() => console.log('Subscribed to newProduct!'));
+        return unsubscribe;
+      }
+    })();
+  }, []);
+  const handleNotification = async (notification: any) => {
+    if (!notification) {
+      return;
+    }
+    if (notification.data.screen === 'newProduct') {
+      dispatch(getProducts({productId: notification.data.id, navigation}));
+    }
+  };
   return (
     <RootDrawer.Navigator
       initialRouteName="Home"

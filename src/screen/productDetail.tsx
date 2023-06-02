@@ -5,36 +5,48 @@ import {normalize} from '../styles/Style';
 import CustomHeader from '../components/Header';
 import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
 import {RootState} from '../store/Store';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {userSlice} from '../store/slices/userSlice';
+import Loader from '../components/Loader';
 
-export default function ProductDetail({route}: any) {
-  const {id, name, description, price, image} = route.params;
+export default function ProductDetail({navigation, route}: any) {
+  const {id} = route.params;
+  const product = useSelector((state: RootState) =>
+    state.userSlice.products.find(item => id === item.id),
+  );
   const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
   return (
     <Layout style={styles.container}>
       <CustomHeader title="Product Detail" />
       <ScrollView>
         <View style={styles.content}>
-          <Image
-            source={{uri: image}}
-            style={styles.image}
-            resizeMode="cover"
-          />
+          {product?.image ? (
+            <Image
+              source={{uri: product?.image}}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={{height: normalize(200)}}>
+              <Loader />
+            </View>
+          )}
           <View style={styles.detailsContainer}>
             <EvaText style={styles.name} category="h4">
-              {name}
+              {product?.title}
             </EvaText>
             <EvaText style={styles.description} category="p1">
-              {description}
+              {product?.description}
             </EvaText>
             <Divider style={styles.divider} />
             <View style={styles.priceRow}>
               <EvaText style={styles.price} category="p1">
-                {Number(price).toFixed(2)} PKR
+                {Number(product?.price).toFixed(2)} PKR
               </EvaText>
               <Button
                 onPress={() => {
+                  navigation.goBack();
+                  navigation.navigate('Cart');
                   dispatch(userSlice.actions.AddToCart(id));
                 }}
                 style={styles.addToCartButton}>

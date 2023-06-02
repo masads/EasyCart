@@ -63,13 +63,13 @@ export default function Feed({navigation}: any) {
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   useEffect(() => {
-    dispatch(getProducts());
+    dispatch(getProducts({}));
   }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
-      dispatch(getProducts());
+      dispatch(getProducts({}));
       setRefreshing(false);
     }, 2000);
   }, []);

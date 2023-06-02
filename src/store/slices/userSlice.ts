@@ -1,6 +1,7 @@
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import userActions, {
   Product,
+  fetchCartItems,
   getProducts,
   getToken,
   login,
@@ -106,9 +107,22 @@ export const userSlice = createSlice({
     builder.addCase(getProducts.rejected, (state: UserState) => {
       state.loading = false;
     });
+    builder.addCase(fetchCartItems.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(
+      fetchCartItems.fulfilled,
+      (state, action: PayloadAction<Product[]>) => {
+        state.loading = false;
+        state.cart = action.payload;
+      },
+    );
+    builder.addCase(fetchCartItems.rejected, state => {
+      state.loading = false;
+    });
   },
 });
-
+fetchCartItems;
 export const {AdminOff, AdminOn, AddToCart} = userSlice.actions;
 
 export default userSlice.reducer;

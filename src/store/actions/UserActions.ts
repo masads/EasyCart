@@ -4,6 +4,7 @@ import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 import {setAlert} from '../slices/AppSlice';
 import firestore from '@react-native-firebase/firestore';
 import {UserState} from '../slices/userSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserActions {
   isAuthenticated: boolean;
@@ -110,7 +111,6 @@ export const login = createAsyncThunk<
       throw 'User not logged in';
     }
   } catch (error: any) {
-    console.error(error);
     console.log(error);
     let message = 'Something went wrong!';
     if (error.code === 'credential not found') {
@@ -143,7 +143,7 @@ export const logout = createAsyncThunk<UserActions, void, {state: RootState}>(
         name: '',
       };
     } catch (error: any) {
-      console.error(error);
+      console.log(error);
       return rejectWithValue('Something went worng');
     }
   },
@@ -151,28 +151,50 @@ export const logout = createAsyncThunk<UserActions, void, {state: RootState}>(
 
 export const getProducts = createAsyncThunk<
   Product[],
-  void,
+  {productId?: string; navigation?: any},
   {state: RootState; rejectValue: any}
->('userSlice/getProducts', async function (_, {rejectWithValue, dispatch}) {
-  try {
-    // Retrieve products from Firebase Firestore
-    const querySnapshot = await firestore().collection('products').get();
-    const products: Product[] = [];
-    querySnapshot.forEach(doc => {
-      const product = {
-        id: doc.id,
-        ...doc.data(),
-      } as Product;
-      products.push(product);
-    });
-    return products;
-  } catch (error: any) {
-    console.log(error);
-    let message = 'Something went wrong!';
-    dispatch(setAlert({message}));
-    return rejectWithValue('Something went wrong');
-  }
-});
+>(
+  'userSlice/getProducts',
+  async function ({productId, navigation}, {rejectWithValue, dispatch}) {
+    try {
+      // Retrieve products from Firebase Firestore
+      const querySnapshot = await firestore().collection('products').get();
+      let products: Product[] = [];
+      const data: any = await AsyncStorage.getItem('cart');
+      const productIds = JSON.parse(data) as any[];
+      querySnapshot.forEach(doc => {
+        const product = {
+          id: doc.id,
+          ...doc.data(),
+        } as Product;
+        products.push(product);
+      });
+      if (productIds && productIds.length > 0) {
+        products = products.filter(productItem => {
+          const product: Product | undefined = productIds.find(
+            item => item.id === productItem.id,
+          );
+          if (product) {
+            return false;
+          } else {
+            return true;
+          }
+        });
+      }
+      if (productId && navigation) {
+        navigation.navigate('ProductDetail', {
+          id: productId,
+        });
+      }
+      return products;
+    } catch (error: any) {
+      console.log(error);
+      let message = 'Something went wrong!';
+      dispatch(setAlert({message}));
+      return rejectWithValue('Something went wrong');
+    }
+  },
+);
 
 function AdminOn(state: UserState) {
   state.admin = true;
@@ -184,8 +206,14 @@ function AddToCart(state: UserState, action: any) {
   const product: Product | undefined = state.products.find(
     item => item.id === action.payload,
   );
-  console.log(product);
   if (product) {
+    AsyncStorage.setItem(
+      'cart',
+      JSON.stringify([
+        {id: product.id},
+        ...state.cart.map(item => ({id: item.id})),
+      ]),
+    );
     state.cart.push(product);
     state.products = state.products.filter(item => item.id !== action.payload);
   }
@@ -198,8 +226,46 @@ function DeleteFromCart(state: UserState, action: any) {
   if (product) {
     state.products.push(product);
     state.cart = state.cart.filter(item => item.id !== action.payload);
+    AsyncStorage.setItem(
+      'cart',
+      JSON.stringify([...state.cart.map(item => ({id: item.id}))]),
+    );
   }
 }
+export const fetchCartItems = createAsyncThunk(
+  'userSlice/fetchCartItems',
+  async (_, {dispatch, rejectWithValue}) => {
+    try {
+      const querySnapshot = await firestore().collection('products').get();
+      let products: Product[] = [];
+      const data: any = await AsyncStorage.getItem('cart');
+      const productIds = JSON.parse(data) as any[];
+      querySnapshot.forEach(doc => {
+        const product = {
+          id: doc.id,
+          ...doc.data(),
+        } as Product;
+        products.push(product);
+      });
+      products = products.filter(productItem => {
+        const product: Product | undefined = productIds.find(
+          item => item.id === productItem.id,
+        );
+        if (product) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+      return products;
+    } catch (error) {
+      console.log(error);
+      let message = 'Something went wrong!';
+      dispatch(setAlert({message}));
+      return rejectWithValue('Something went wrong');
+    }
+  },
+);
 const userActions = {AdminOff, AdminOn, AddToCart, DeleteFromCart};
 
 export default userActions;

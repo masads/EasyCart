@@ -25,6 +25,8 @@ export const addProduct = createAsyncThunk<
         title,
         description,
         price,
+        image:
+          'https://anyimage.io/storage/uploads/1d2315b13d1fca05e85b94779cb15c1f',
       });
       // Upload image to Firebase Storage and get the download URL
       const imageRef = storage().ref().child(`products/${productRef.id}`);
@@ -45,6 +47,7 @@ export const addProduct = createAsyncThunk<
       dispatch(
         setAlert({message: 'Product Added Successfully', mode: 'success'}),
       );
+
       return product;
     } catch (error: any) {
       console.log(error);

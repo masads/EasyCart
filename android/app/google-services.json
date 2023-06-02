@@ -1,33 +1,33 @@
 {
   "project_info": {
-    "project_number": "37447694561",
-    "project_id": "easycart-87c24",
-    "storage_bucket": "easycart-87c24.appspot.com"
+    "project_number": "255346928424",
+    "project_id": "easycart-8aa37",
+    "storage_bucket": "easycart-8aa37.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:37447694561:android:03be7d7ce6b90c6fe0dfa0",
+        "mobilesdk_app_id": "1:255346928424:android:24ead1ca6d4ebcb7373e1d",
         "android_client_info": {
           "package_name": "com.easycart"
         }
       },
       "oauth_client": [
         {
-          "client_id": "37447694561-eh0cso9dhhgq42m151321g1aqdnidi3b.apps.googleusercontent.com",
+          "client_id": "255346928424-97k1eqscokjlin4lpnq53s3d93gg239r.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAt1VUmIzlulQ2PbNu1X1WD6BVoYldz33Y"
+          "current_key": "AIzaSyDGsmCFCPM3bYzAbkgvDaL4hhmhwimuGwY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "37447694561-eh0cso9dhhgq42m151321g1aqdnidi3b.apps.googleusercontent.com",
+              "client_id": "255346928424-97k1eqscokjlin4lpnq53s3d93gg239r.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

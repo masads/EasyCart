@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {StyleSheet, View, FlatList, Image, Pressable} from 'react-native';
 import {Button, Card, Modal, Text, Icon} from '@ui-kitten/components';
 import MenuHeader from '../components/MenuHeader';
@@ -8,11 +8,13 @@ import {RootState} from '../store/Store';
 import Loader from '../components/Loader';
 import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
 import {userSlice} from '../store/slices/userSlice';
+import {fetchCartItems} from '../store/actions/UserActions';
 
 export default function CartScreen({navigation}: any) {
   const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
   const [visible, setVisible] = useState(false);
   const {loading, cart} = useSelector((state: RootState) => state.userSlice);
+  const [totalPrice, setTotalPrice] = useState(0);
   const renderItem = ({item}: any) => (
     <>
       <Card style={styles.item}>
@@ -39,13 +41,23 @@ export default function CartScreen({navigation}: any) {
   };
 
   const handlePayPress = () => {
-    setVisible(true);
+    if (cart.length > 0) {
+      let price: number = 0;
+      cart.map((item: any) => {
+        price += Number(item.price);
+        dispatch(userSlice.actions.DeleteFromCart(item.id));
+      });
+      setTotalPrice(price);
+      setVisible(true);
+    }
   };
 
   const handleModalClose = () => {
     setVisible(false);
   };
-
+  useEffect(() => {
+    dispatch(fetchCartItems());
+  }, []);
   return (
     <View style={styles.container}>
       <MenuHeader navigation={navigation} />
@@ -78,7 +90,7 @@ export default function CartScreen({navigation}: any) {
             name="checkmark-circle-outline"
           />
           <Text category="h4" style={styles.modalText}>
-            Payment Successfully
+            {totalPrice.toFixed(2)} PKR Paid Successfully
           </Text>
           <Button style={styles.modalButton} onPress={handleModalClose}>
             CLOSE
@@ -150,6 +162,7 @@ const styles = StyleSheet.create({
   modalText: {
     fontWeight: 'bold',
     marginVertical: 16,
+    textAlign: 'center',
   },
   modalButtonContainer: {
     flexDirection: 'row',
