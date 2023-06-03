@@ -1,63 +1,59 @@
-import React, {useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {View, StyleSheet, FlatList} from 'react-native';
 import {Text, Card, Layout} from '@ui-kitten/components';
 import CustomHeader from '../components/Header';
+import {useDispatch, useSelector} from 'react-redux';
+import {RootState} from '../store/Store';
+import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
+import {getNotifications, getProducts, readNotification} from '../store/actions/UserActions';
+import {RefreshControl} from 'react-native-gesture-handler';
 
-const NOTIFICATIONS = [
-  {
-    id: '1',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '2 hours ago',
-    read: true,
-  },
-  {
-    id: '2',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '1 day ago',
-    read: false,
-  },
-  {
-    id: '3',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '3 days ago',
-    read: true,
-  },
-  {
-    id: '4',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '5 days ago',
-    read: false,
-  },
-  {
-    id: '5',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '5 days ago',
-    read: false,
-  },
-  {
-    id: '6',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '5 days ago',
-    read: false,
-  },
-  {
-    id: '7',
-    title: 'New item added to the store',
-    message: 'Check out our latest product',
-    time: '5 days ago',
-    read: false,
-  },
-];
+function getTimeAgo(dateString: any) {
+  const [date, time] = dateString.split(', ');
+  const [month, day, year] = date.split('/');
+  const [hour, minute, second, period] = time.split(/:|\s/);
 
-export default function Notification() {
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  let parsedHour = parseInt(hour);
+  if (period === 'PM') {
+    parsedHour += 12;
+  }
+  const dateObject: any = new Date(
+    year,
+    month - 1,
+    day,
+    parsedHour,
+    minute,
+    second,
+  );
+  console.log(dateObject);
+  const now: any = new Date();
+  const elapsed = now - dateObject;
 
+  const seconds = Math.floor(elapsed / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(months / 12);
+
+  if (years > 0) {
+    return years === 1 ? '1 year ago' : `${years} years ago`;
+  } else if (months > 0) {
+    return months === 1 ? '1 month ago' : `${months} months ago`;
+  } else if (days > 0) {
+    return days === 1 ? '1 day ago' : `${days} days ago`;
+  } else if (hours > 0) {
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+  } else if (minutes > 0) {
+    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+  } else {
+    return seconds === 1 ? '1 second ago' : `${seconds} seconds ago`;
+  }
+}
+
+export default function Notification({navigation}) {
+  const {notifications} = useSelector((state: RootState) => state.userSlice);
+  const dispatch: ThunkDispatch<RootState, any, AnyAction> = useDispatch();
   const renderItem = ({item}: any) => (
     <Card
       style={styles.card}
@@ -66,31 +62,43 @@ export default function Notification() {
       <View style={styles.cardContent}>
         <View style={styles.textContainer}>
           <Text category="h6">{item.title}</Text>
-          <Text category="s1">{item.message}</Text>
-          <Text category="c2">{item.time}</Text>
+          <Text category="s1">{item.description}</Text>
+          <Text category="c2">{getTimeAgo(item.time)}</Text>
         </View>
       </View>
     </Card>
   );
-
+  useEffect(() => {
+    dispatch(getNotifications());
+  }, []);
   const handleCardPress = (item: any) => {
     if (!item.read) {
-      const updatedNotifications = notifications.map(notification =>
-        notification.id === item.id
-          ? {...notification, read: true}
-          : notification,
-      );
-      setNotifications(updatedNotifications);
+      dispatch(readNotification(item.title));
     }
+    dispatch(getProducts({productId: item.data.id, navigation}));
   };
-
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      dispatch(getNotifications());
+      setRefreshing(false);
+    }, 2000);
+  }, []);
   return (
     <Layout style={styles.container} level="1">
       <CustomHeader title="Notifications" />
       <FlatList
         data={notifications}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.description}
+        refreshControl={
+          <RefreshControl
+            colors={['#3366FF']}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
       />
     </Layout>
   );

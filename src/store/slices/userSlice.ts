@@ -1,11 +1,14 @@
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import userActions, {
   Product,
+  addNotification,
   fetchCartItems,
+  getNotifications,
   getProducts,
   getToken,
   login,
   logout,
+  readNotification,
   register,
 } from '../actions/UserActions';
 
@@ -19,6 +22,7 @@ export interface UserState {
   admin: boolean;
   products: Product[];
   cart: Product[];
+  notifications: any[];
 }
 
 const initialState: UserState = {
@@ -31,6 +35,7 @@ const initialState: UserState = {
   admin: false,
   products: [],
   cart: [],
+  notifications: [],
 };
 
 export const userSlice = createSlice({
@@ -118,6 +123,47 @@ export const userSlice = createSlice({
       },
     );
     builder.addCase(fetchCartItems.rejected, state => {
+      state.loading = false;
+    });
+    builder.addCase(getNotifications.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(
+      getNotifications.fulfilled,
+      (state, action: PayloadAction<any[]>) => {
+        state.loading = false;
+        state.notifications = action.payload;
+      },
+    );
+    builder.addCase(getNotifications.rejected, state => {
+      state.loading = false;
+    });
+    builder.addCase(addNotification.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(
+      addNotification.fulfilled,
+      (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        if (action.payload) {
+          state.notifications.push(action.payload);
+        }
+      },
+    );
+    builder.addCase(addNotification.rejected, state => {
+      state.loading = false;
+    });
+    builder.addCase(readNotification.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(
+      readNotification.fulfilled,
+      (state, action: PayloadAction<any[]>) => {
+        state.loading = false;
+        state.notifications = action.payload;
+      },
+    );
+    builder.addCase(readNotification.rejected, state => {
       state.loading = false;
     });
   },

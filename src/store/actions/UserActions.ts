@@ -266,6 +266,99 @@ export const fetchCartItems = createAsyncThunk(
     }
   },
 );
+
+export const getNotifications = createAsyncThunk<
+  any[],
+  void,
+  {state: RootState; rejectValue: any; dispatch: any}
+>('userSlice/getNotifications', async (_, {dispatch, rejectWithValue}) => {
+  try {
+    const data: any = await AsyncStorage.getItem('notifications');
+    const notifications = JSON.parse(data) as any[];
+    if (notifications) {
+      return notifications;
+    }
+    return [];
+  } catch (error) {
+    console.log(error);
+    let message = 'Something went wrong!';
+    dispatch(setAlert({message}));
+    return rejectWithValue('Something went wrong');
+  }
+});
+
+export const addNotification = createAsyncThunk<
+  any,
+  {data?: []; title: string; description: string; read: boolean},
+  {state: RootState; rejectValue: any; dispatch: any}
+>(
+  'userSlice/addNotification',
+  async (
+    {data, title, description, read},
+    {dispatch, getState, rejectWithValue},
+  ) => {
+    try {
+      const state = getState();
+      let findit = state.userSlice.notifications.find(
+        (item: any) => item.description === description,
+      );
+      if (findit) {
+        return false;
+      }
+      const temp = {
+        title,
+        description,
+        time: new Date().toLocaleString(),
+        read,
+        data,
+      };
+      const tempnotifications: any = await AsyncStorage.getItem(
+        'notifications',
+      );
+      const notifications = JSON.parse(tempnotifications) as any[];
+
+      if (notifications) {
+        AsyncStorage.setItem(
+          'notifications',
+          JSON.stringify([temp, ...state.userSlice.notifications]),
+        );
+      } else {
+        AsyncStorage.setItem('notifications', JSON.stringify([temp]));
+      }
+      return temp;
+    } catch (error) {
+      console.log(error);
+      let message = 'Something went wrong!';
+      dispatch(setAlert({message}));
+      return rejectWithValue('Something went wrong');
+    }
+  },
+);
+
+export const readNotification = createAsyncThunk<
+  any[],
+  string,
+  {state: RootState; rejectValue: any; dispatch: any}
+>('userSlice/readNotification', async (data, {dispatch, rejectWithValue}) => {
+  try {
+    const tempnotifications: any = await AsyncStorage.getItem('notifications');
+    const notifications = JSON.parse(tempnotifications) as any[];
+
+    if (notifications) {
+      let temp = notifications.map((item: any) =>
+        item.title === data ? {...item, read: true} : item,
+      );
+      AsyncStorage.setItem('notifications', JSON.stringify(temp));
+      return temp;
+    }
+    return [];
+  } catch (error) {
+    console.log(error);
+    let message = 'Something went wrong!';
+    dispatch(setAlert({message}));
+    return rejectWithValue('Something went wrong');
+  }
+});
 const userActions = {AdminOff, AdminOn, AddToCart, DeleteFromCart};
 
 export default userActions;

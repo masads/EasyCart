@@ -14,10 +14,14 @@ import CartScreen from '../screen/cart';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../store/Store';
 import {AnyAction, ThunkDispatch} from '@reduxjs/toolkit';
-import {getProducts, logout} from '../store/actions/UserActions';
+import {
+  addNotification,
+  getProducts,
+  logout,
+} from '../store/actions/UserActions';
 import messaging from '@react-native-firebase/messaging';
 import {requestUserPermission} from '../../App';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 export type RootDrawerParamList = {
   Home: undefined;
   Cart: undefined;
@@ -106,11 +110,24 @@ export default function Home() {
         }
 
         messaging().onNotificationOpenedApp(handleNotification);
-
         messaging().getInitialNotification().then(handleNotification);
-
+        const unsubscribe = messaging().onMessage((notification: any) => {
+          if (!notification) {
+            return;
+          }
+          console.log(notification);
+          if (notification.data.screen === 'newProduct') {
+            dispatch(
+              addNotification({
+                data: notification.data,
+                title: notification.notification.title,
+                description: notification.notification.body,
+                read: false,
+              }),
+            );
+          }
+        });
         messaging().setBackgroundMessageHandler(handleNotification);
-        const unsubscribe = messaging().onMessage(handleNotification);
 
         messaging()
           .subscribeToTopic('newProduct')
@@ -125,6 +142,14 @@ export default function Home() {
     }
     if (notification.data.screen === 'newProduct') {
       dispatch(getProducts({productId: notification.data.id, navigation}));
+      dispatch(
+        addNotification({
+          data: notification.data,
+          title: notification.notification.title,
+          description: notification.notification.body,
+          read: true,
+        }),
+      );
     }
   };
   return (
